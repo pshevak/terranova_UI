@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TerraNova: Post-Fire Recovery Planner</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Use Inter Font -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9fb; /* Very light gray/off-white */
+        }
+        /* Custom class to ensure placeholder images fill the container */
+        .map-placeholder-img {
+            object-fit: cover;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+
+    <!-- Header: Cleaned up title and added navigation links -->
+    <header class="bg-white shadow-md p-4 sticky top-0 z-10">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <!-- Updated Title: Removed suffix -->
+            <h1 class="text-2xl font-bold text-teal-600">TerraNova</h1>
+            
+            <!-- Added Navigation Links -->
+            <nav class="space-x-6 text-sm font-medium">
+                <a href="#" class="text-gray-600 hover:text-teal-600 transition-colors">About Us</a>
+                <a href="#" class="text-gray-600 hover:text-teal-600 transition-colors">Services</a>
+                <a href="#" class="text-gray-600 hover:text-teal-600 transition-colors">Contact</a>
+            </nav>
+            
+            <!-- Removed JHU Project Update text -->
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto p-6">
+        <div class="flex space-x-6">
+            <!-- Left Column: Input & Controls -->
+            <div id="control-panel" class="w-1/3 bg-white p-6 rounded-xl shadow-lg h-fit transition-all duration-300">
+                <h2 class="text-xl font-semibold mb-6 text-gray-700 border-b pb-3">Analysis Inputs</h2>
+
+                <!-- Step Counter / Guide -->
+                <div class="mb-4 flex items-center justify-between text-sm font-medium">
+                    <span class="text-gray-500">Workflow Step:</span>
+                    <span id="step-title" class="px-3 py-1 bg-teal-100 text-teal-700 rounded-full">1. Initial Setup</span>
+                </div>
+
+                <!-- Input Fields (Visible in Step 1) -->
+                <div id="step-1-inputs" class="space-y-4">
+                    <label class="block">
+                        <span class="text-gray-700 font-medium">1. Satellite Image Source</span>
+                        <select id="select-image" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 p-2 border">
+                            <option value="none" disabled selected>Select or Upload Landsat Data (.tif)</option>
+                            <option value="img_a">Big_Sur_2025_Landsat.tif</option>
+                            <option value="img_b">Yosemite_W-A_2024.tif</option>
+                        </select>
+                    </label>
+
+                    <label class="block">
+                        <span class="text-gray-700 font-medium">2. Analysis Granularity</span>
+                        <select id="select-granularity" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 p-2 border">
+                            <option value="none" disabled selected>Choose Data Resolution</option>
+                            <option value="low">Low (100m Watershed Grid)</option>
+                            <option value="medium">Medium (30m Parcel Grid)</option>
+                            <option value="high">High (Pixel-Level)</option>
+                        </select>
+                    </label>
+
+                    <label class="block">
+                        <span class="text-gray-700 font-medium">3. Region</span>
+                        <select id="select-region" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 p-2 border">
+                            <option value="none" disabled selected>Select State or Ecoregion</option>
+                            <option value="california">California (CA)</option>
+                            <option value="oregon">Oregon (OR)</option>
+                            <option value="washington">Washington (WA)</option>
+                            <option value="colorado">Colorado (CO)</option>
+                            <option value="texas">Texas (TX)</option>
+                            <option value="florida">Florida (FL)</option>
+                        </select>
+                    </label>
+                </div>
+
+                <!-- Function Selection (Visible in Step 2) -->
+                <div id="step-2-function" class="space-y-3 mt-6 border-t pt-4 hidden">
+                    <span class="text-gray-700 font-medium block">4. Select Analysis Goal</span>
+                    <div class="space-y-2">
+                        <label class="flex items-center space-x-2 p-2 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors duration-150">
+                            <input type="radio" name="analysis_goal" value="erosion" class="form-radio text-red-600 focus:ring-red-500">
+                            <span class="text-gray-700">Erosion Risk (High Priority)</span>
+                        </label>
+                        <label class="flex items-center space-x-2 p-2 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors duration-150">
+                            <input type="radio" name="analysis_goal" value="reburn" class="form-radio text-orange-600 focus:ring-orange-500">
+                            <span class="text-gray-700">Re-burn Probability (Minimize Risk)</span>
+                        </label>
+                        <label class="flex items-center space-x-2 p-2 border rounded-lg hover:bg-teal-50 cursor-pointer transition-colors duration-150 bg-teal-50 ring-2 ring-teal-500">
+                            <input type="radio" name="analysis_goal" value="optimal" class="form-radio text-teal-600 focus:ring-teal-500" checked>
+                            <span class="text-teal-800 font-semibold">Multi-Objective Optimal (NSGA-II)</span>
+                        </label>
+                        <label id="custom-option-label" class="flex items-center space-x-2 p-2 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors duration-150">
+                            <input type="radio" name="analysis_goal" value="custom" class="form-radio text-blue-600 focus:ring-blue-500">
+                            <span class="text-gray-700">Custom Formula (Expert Mode)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Custom Formula Input (Visible ONLY when Custom is selected) -->
+                <div id="step-3-custom" class="space-y-3 mt-6 border-t pt-4 hidden">
+                    <span class="text-gray-700 font-medium block">5. Define Optimization Formula</span>
+                    <textarea id="custom-formula-text" rows="3" class="w-full p-3 font-mono text-sm bg-gray-100 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-blue-500" placeholder="F = (W_Erosion * Risk) + (W_Recovery * Potential)"></textarea>
+                    <div class="text-xs text-gray-500">Weights: W_Erosion = 0.6 | W_Recovery = 0.4</div>
+                </div>
+
+                <!-- Workflow Button -->
+                <button id="next-step-button" class="mt-6 w-full py-3 px-4 rounded-lg text-white font-bold transition-all duration-300 bg-teal-600 hover:bg-teal-700 shadow-md hover:shadow-lg">
+                    Next: Prepare Analysis
+                </button>
+            </div>
+
+            <!-- Right Column: Map & Output -->
+            <div class="w-2/3 space-y-6">
+                <!-- Map Container -->
+                <div id="map-container" class="bg-gray-200 h-[600px] rounded-xl shadow-lg relative overflow-hidden flex items-center justify-center">
+                    <!-- Placeholder Map Content (Changes per step) -->
+                    <div id="map-content" class="absolute inset-0 transition-opacity duration-700 flex flex-col justify-center items-center p-4">
+                        
+                        <!-- Map Content for Initial Setup (Step 1) -->
+                        <div id="map-initial" class="w-full h-full p-4">
+                            <!-- MARKER 1: Initial Setup / US Coverage Map -->
+                            <img src="https://raw.githubusercontent.com/anushkasingh03/Smart-land-repurposing/main/photo1.png" 
+                                 alt="Map of US showing MTBS data sources" 
+                                 class="map-placeholder-img rounded-lg shadow-inner" 
+                                 onerror="this.onerror=null; this.src='https://placehold.co/1000x600/b3d4d7/4a4e4d?text=Image+Load+Failed:+Initial+Setup'; this.classList.remove('map-placeholder-img'); this.classList.add('p-12', 'bg-gray-50', 'text-gray-600', 'text-xl', 'font-semibold');">
+                            <p class="absolute bottom-6 left-1/2 transform -translate-x-1/2 text-sm text-gray-600 px-3 py-1 bg-white bg-opacity-80 rounded-full">Select image and region to focus the analysis.</p>
+                        </div>
+
+                        <!-- Map Content for California (Step 2/3) -->
+                        <div id="map-california" class="w-full h-full p-4 hidden">
+                            <!-- MARKER 2: Region Focus / California Fire Perimeter -->
+                            <img src="https://raw.githubusercontent.com/anushkasingh03/Smart-land-repurposing/main/photo2.png" 
+                                 alt="Satellite image of California burn perimeter" 
+                                 class="map-placeholder-img rounded-lg shadow-inner" 
+                                 onerror="this.onerror=null; this.src='https://placehold.co/1000x600/a0522d/ffffff?text=Image+Load+Failed:+California+Region'; this.classList.remove('map-placeholder-img'); this.classList.add('p-12', 'bg-gray-50', 'text-gray-600', 'text-xl', 'font-semibold');">
+                            <p class="absolute top-4 left-1/2 transform -translate-x-1/2 px-4 py-2 bg-white rounded-full text-lg font-bold text-teal-600 shadow-lg">California Region Selected</p>
+                        </div>
+
+                        <!-- Map Content for Results (Step 4/5) -->
+                        <div id="map-results" class="w-full h-full p-4 hidden">
+                            <!-- MARKER 3: Results Map Background (Burned Satellite Image) -->
+                            <div class="relative w-full h-full bg-cover bg-center rounded-lg shadow-inner" 
+                                 style="background-image: url('https://raw.githubusercontent.com/anushkasingh03/Smart-land-repurposing/main/photo3.png'); background-size: cover;" 
+                                 onerror="this.style.backgroundImage='url(https://placehold.co/1000x600/1e1e1e/d4d4d4?text=Image+Load+Failed:+Background)';">
+                                 
+                                <!-- MARKER 4: The SVG overlay (Color-Coded Parcels) is now a part of the visualization -->
+                                <svg class="absolute inset-0" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">
+                                    <image href="https://raw.githubusercontent.com/anushkasingh03/Smart-land-repurposing/main/photo4.png" x="0" y="0" height="100" width="100" style="opacity:0.9"/>
+
+                                    <!-- Fallback structural rectangles (hidden) -->
+                                    <rect x="5" y="5" width="30" height="30" fill="rgb(22, 163, 74, 0.7)" stroke="white" stroke-width="0.5" style="display:none;"/>
+                                    <rect x="35" y="5" width="30" height="30" fill="rgb(234, 88, 12, 0.7)" stroke="white" stroke-width="0.5" style="display:none;"/>
+                                    <rect x="65" y="5" width="30" height="30" fill="rgb(220, 38, 38, 0.7)" stroke="white" stroke-width="0.5" style="display:none;"/>
+                                    <rect x="5" y="35" width="30" height="30" fill="rgb(220, 38, 38, 0.7)" stroke="white" stroke-width="0.5" style="display:none;"/>
+                                    <rect x="35" y="35" width="30" height="30" fill="rgb(22, 163, 74, 0.7)" stroke="white" stroke-width="0.5" style="display:none;"/>
+                                    <rect x="65" y="35" width="30" height="30" fill="rgb(234, 88, 12, 0.7)" stroke="white" stroke-width="0.5" style="display:none;"/>
+                                    <rect x="5" y="65" width="30" height="30" fill="rgb(22, 163, 74, 0.7)" stroke="white" stroke-width="0.5" style="display:none;"/>
+                                    <rect x="35" y="65" width="30" height="30" fill="rgb(220, 38, 38, 0.7)" stroke="white" stroke-width="0.5" style="display:none;"/>
+                                    <rect x="65" y="65" width="30" height="30" fill="rgb(22, 163, 74, 0.7)" stroke="white" stroke-width="0.5" style="display:none;"/>
+                                </svg>
+                            </div>
+                            <div class="absolute top-4 left-1/2 transform -translate-x-1/2 px-4 py-2 bg-white rounded-full text-lg font-bold text-teal-600 shadow-lg">Optimization Results (Parcel Grid)</div>
+                            <div class="absolute bottom-4 right-4 bg-white p-3 rounded-lg shadow-xl text-xs">
+                                <p class="font-bold text-gray-700 mb-1">Legend (Next Step):</p>
+                                <div class="flex items-center space-x-2"><span class="w-3 h-3 bg-green-600 rounded-full"></span><span>Reforest</span></div>
+                                <div class="flex items-center space-x-2"><span class="w-3 h-3 bg-orange-600 rounded-full"></span><span>Soil Rehab</span></div>
+                                <div class="flex items-center space-x-2"><span class="w-3 h-3 bg-red-600 rounded-full"></span><span>Erosion Barrier</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Final Action/Summary Container (Step 5) -->
+                <div id="final-summary-card" class="bg-white p-6 rounded-xl shadow-lg border border-teal-200 hidden">
+                    <h3 class="text-xl font-semibold mb-4 text-teal-700">Actionable Recovery Summary</h3>
+                    <div class="grid grid-cols-3 gap-4 text-center border-b pb-4 mb-4">
+                        <div class="p-3 bg-gray-50 rounded-lg">
+                            <p class="text-3xl font-bold text-gray-800">5,400</p>
+                            <p class="text-sm text-gray-500">Acres Analyzed</p>
+                        </div>
+                        <div class="p-3 bg-gray-50 rounded-lg">
+                            <p class="text-3xl font-bold text-green-600">72%</p>
+                            <p class="text-sm text-gray-500">Risk Reduction (Projected)</p>
+                        </div>
+                        <div class="p-3 bg-gray-50 rounded-lg">
+                            <p class="text-3xl font-bold text-red-600">28%</p>
+                            <p class="text-sm text-gray-500">High Severity Parcels</p>
+                        </div>
+                    </div>
+
+                    <!-- FINAL ACTION BLOCK: Side-by-Side and Spaced -->
+                    <div class="flex justify-between items-center space-x-4 pt-4">
+                        <p class="text-lg font-medium text-gray-700 max-w-lg">The comprehensive report is ready to download for validation.</p>
+                        <button id="download-report-button" class="py-2 px-4 rounded-lg text-white font-medium text-sm transition-all duration-300 bg-teal-600 hover:bg-teal-700 shadow-lg hover:shadow-xl flex items-center space-x-2 whitespace-nowrap">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                            <span>Download Report (.PDF)</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const state = {
+            step: 1,
+            maxSteps: 5,
+            analysisGoalSelection: 'optimal' 
+        };
+
+        const elements = {
+            stepTitle: document.getElementById('step-title'),
+            nextStepButton: document.getElementById('next-step-button'),
+            downloadReportButton: document.getElementById('download-report-button'), // Updated ID for clarity
+            
+            step1Inputs: document.getElementById('step-1-inputs'),
+            step2Function: document.getElementById('step-2-function'),
+            step3Custom: document.getElementById('step-3-custom'),
+            
+            mapContent: document.getElementById('map-content'),
+            mapInitial: document.getElementById('map-initial'),
+            mapCalifornia: document.getElementById('map-california'),
+            mapResults: document.getElementById('map-results'),
+            
+            finalSummaryCard: document.getElementById('final-summary-card'),
+            customOptionLabel: document.getElementById('custom-option-label'),
+            selectImage: document.getElementById('select-image'),
+            selectGranularity: document.getElementById('select-granularity'),
+            selectRegion: document.getElementById('select-region'),
+            analysisGoalInputs: document.querySelectorAll('input[name="analysis_goal"]')
+        };
+
+        const stepMap = {
+            1: { title: '1. Initial Setup', button: 'Next: Select Analysis Goal', showMap: 'map-initial', hideMap: ['map-california', 'map-results'], show: ['step-1-inputs'], hide: ['step-2-function', 'step-3-custom', 'final-summary-card'] },
+            2: { title: '2. Select Analysis Goal', button: 'Next: Process & Segment Image', showMap: 'map-california', hideMap: ['map-initial', 'map-results'], show: ['step-1-inputs', 'step-2-function'], hide: ['step-3-custom', 'final-summary-card'], action: 'selectGoal' },
+            3: { title: '3. Custom Formula Input', button: 'Next: Process & Segment Image', showMap: 'map-california', hideMap: ['map-initial', 'map-results'], show: ['step-1-inputs', 'step-2-function', 'step-3-custom'], hide: ['final-summary-card'], action: 'customizeFormula' },
+            4: { title: '4. Generating Recommendations', button: 'Next: View Final Summary', showMap: 'map-results', hideMap: ['map-initial', 'map-california'], show: ['step-1-inputs', 'step-2-function'], hide: ['step-3-custom', 'final-summary-card'], action: 'showResults' },
+            5: { title: '5. Actionable Report', button: 'Restart Workflow', showMap: 'map-results', hideMap: ['map-initial', 'map-california'], show: ['step-1-inputs', 'step-2-function', 'final-summary-card'], hide: ['step-3-custom'], action: 'showSummary' }
+        };
+
+        function toggleCustomInput(show) {
+            elements.step3Custom.classList.toggle('hidden', !show);
+            if (show) {
+                elements.customOptionLabel.classList.add('bg-blue-50', 'ring-2', 'ring-blue-500');
+            } else {
+                 elements.customOptionLabel.classList.remove('bg-blue-50', 'ring-2', 'ring-blue-500');
+            }
+        }
+
+        function setAnalysisGoalSelection(value) {
+            state.analysisGoalSelection = value;
+            elements.analysisGoalInputs.forEach(input => {
+                const isCustom = input.value === 'custom';
+                const label = input.parentElement;
+                
+                // Clear all previous highlight classes
+                label.classList.remove('bg-teal-50', 'ring-2', 'ring-teal-500', 'bg-blue-50', 'ring-2', 'ring-blue-500');
+
+                if (input.value === value) {
+                    input.checked = true;
+                    // Apply highlight
+                    label.classList.add(isCustom ? 'bg-blue-50' : 'bg-teal-50', 'ring-2', isCustom ? 'ring-blue-500' : 'ring-teal-500');
+                } else {
+                    input.checked = false;
+                }
+            });
+            toggleCustomInput(value === 'custom');
+        }
+
+
+        function updateUI() {
+            const stepConfig = stepMap[state.step];
+            elements.stepTitle.textContent = stepConfig.title;
+            elements.nextStepButton.textContent = stepConfig.button;
+            elements.nextStepButton.classList.remove('bg-teal-600', 'hover:bg-teal-700', 'bg-red-600', 'hover:bg-red-700');
+            elements.nextStepButton.classList.add(state.step === 5 ? 'bg-red-600' : 'bg-teal-600', state.step === 5 ? 'hover:bg-red-700' : 'hover:bg-teal-700');
+
+            // Toggle visibility for step sections and final card
+            Object.values(elements).forEach(el => {
+                if (el && el.id && (el.id.startsWith('step-') || el.id === 'final-summary-card')) {
+                    const shouldShow = stepConfig.show.includes(el.id);
+                    el.classList.toggle('hidden', !shouldShow);
+                }
+            });
+            
+            // Disable Step 1 selects after moving forward
+            elements.step1Inputs.querySelectorAll('select').forEach(input => {
+                input.disabled = state.step > 1;
+            });
+            
+            // Enable/disable Step 2/3 inputs
+            const enableStep23 = state.step === 2 || state.step === 3;
+            elements.analysisGoalInputs.forEach(input => {
+                input.disabled = !enableStep23;
+            });
+            const customTextArea = elements.step3Custom.querySelector('textarea');
+            if (customTextArea) customTextArea.disabled = !enableStep23;
+
+            // Pre-fill selects for demo continuity
+            if (state.step >= 2) {
+                elements.selectImage.value = 'img_a';
+                elements.selectGranularity.value = 'medium';
+                elements.selectRegion.value = 'california';
+            }
+
+            // Respect/persist selection highlights across steps
+            if (state.step === 2) {
+                setAnalysisGoalSelection(state.analysisGoalSelection); 
+
+            } else if (state.step === 3) {
+                 setAnalysisGoalSelection('custom');
+
+            } else if (state.step >= 4) {
+                 setAnalysisGoalSelection(state.analysisGoalSelection);
+            }
+
+            // Map visibility
+            ['map-initial','map-california','map-results'].forEach(id => {
+                const el = document.getElementById(id);
+                el.classList.toggle('hidden', id !== stepConfig.showMap);
+            });
+
+            // Final card explicitly
+            elements.finalSummaryCard.classList.toggle('hidden', state.step !== 5);
+        }
+
+        function handleNextStep() {
+            const currentSelectionEl = document.querySelector('input[name="analysis_goal"]:checked');
+            const currentSelection = currentSelectionEl ? currentSelectionEl.value : state.analysisGoalSelection;
+
+            if (state.step === 2) {
+                state.analysisGoalSelection = currentSelection;
+            }
+
+            if (state.step === 2 && currentSelection === 'custom') {
+                state.step = 3;
+                updateUI();
+                return;
+            }
+
+            if (state.step === state.maxSteps) {
+                // Restart
+                state.step = 1;
+                state.analysisGoalSelection = 'optimal';
+                updateUI();
+                return;
+            }
+
+            if (state.step === 2 && currentSelection !== 'custom') {
+                state.step = 4;
+            } else if (state.step === 3) {
+                state.step = 4;
+            } else {
+                state.step++;
+            }
+            updateUI();
+        }
+
+        // Event listeners for step navigation & selections
+        elements.analysisGoalInputs.forEach(input => {
+            input.addEventListener('change', (event) => {
+                if (state.step === 2) setAnalysisGoalSelection(event.target.value);
+            });
+        });
+        elements.nextStepButton.addEventListener('click', handleNextStep);
+        elements.downloadReportButton.addEventListener('click', handleNextStep); // Now uses the correct download button
+
+        // ---------- GitHub Pages-friendly image wiring ----------
+        const ASSETS_PREFIX = 'https://raw.githubusercontent.com/anushkasingh03/Smart-land-repurposing/main/'; // Full path to the main branch
+
+        function preloadImage(url) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => resolve(url);
+                img.onerror = () => reject(url);
+                img.src = url;
+            });
+        }
+
+        function wireImagesForPages() {
+            // 1) Regular <img> elements
+            const initialImg = document.querySelector('#map-initial img');
+            const californiaImg = document.querySelector('#map-california img');
+            if (initialImg) initialImg.src = ASSETS_PREFIX + 'photo1.png';
+            if (californiaImg) californiaImg.src = ASSETS_PREFIX + 'photo2.png';
+
+            // 2) Background image on div with fallback
+            const bgContainer = document.querySelector('#map-results .relative');
+            const bgUrl = ASSETS_PREFIX + 'photo3.png';
+            if (bgContainer) {
+                preloadImage(bgUrl)
+                    .then(() => {
+                        bgContainer.style.backgroundImage = `url('${bgUrl}')`;
+                        bgContainer.style.backgroundSize = 'cover';
+                        bgContainer.style.backgroundPosition = 'center';
+                    })
+                    .catch(() => {
+                        bgContainer.style.backgroundImage = "url('https://placehold.co/1000x600/1e1e1e/d4d4d4?text=Image+Load+Failed:+Background')";
+                        bgContainer.style.backgroundSize = 'cover';
+                        bgContainer.style.backgroundPosition = 'center';
+                        console.warn('Could not load', bgUrl);
+                    });
+            }
+
+            // 3) SVG overlay requires href + xlink:href for compatibility
+            const svgImg = document.querySelector('#map-results svg image');
+            const overlayUrl = ASSETS_PREFIX + 'photo4.png';
+            if (svgImg) {
+                svgImg.setAttribute('href', overlayUrl);
+                svgImg.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', overlayUrl);
+
+                // If overlay is missing, hide it gracefully
+                preloadImage(overlayUrl).catch(() => {
+                    svgImg.setAttribute('href', '');
+                    svgImg.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', '');
+                    console.warn('Could not load', overlayUrl, '- hiding SVG overlay');
+                });
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            updateUI();
+            wireImagesForPages();
+            // Optional diagnostics
+            ['photo1.png','photo2.png','photo3.png','photo4.png']
+                .map(n => ASSETS_PREFIX + n)
+                .forEach(url => preloadImage(url).catch(() => console.warn('Missing asset:', url)));
+        });
+    </script>
+</body>
+</html>
