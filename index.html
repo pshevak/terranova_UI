@@ -159,7 +159,7 @@
                                  
                                 <!-- MARKER 4: The SVG overlay (Color-Coded Parcels) is now a part of the visualization -->
                                 <svg class="absolute inset-0" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">
-                                    <image href="https://raw.githubusercontent.com/pshevak/terranova_ui/main/photo4.png" x="0" y="0" height="100" width="100" style="opacity:0.9"/>
+                                    <image href="https://raw.githubusercontent.com/pshevak/terranova_ui/main/photo3.png" x="0" y="0" height="100" width="100" style="opacity:0.9"/>
 
                                     <!-- Fallback structural rectangles (hidden) -->
                                     <rect x="5" y="5" width="30" height="30" fill="rgb(22, 163, 74, 0.7)" stroke="white" stroke-width="0.5" style="display:none;"/>
@@ -184,10 +184,11 @@
                     </div>
                 </div>
 
-                <!-- Final Action/Summary Container (Step 5) -->
-                <div id="final-summary-card" class="bg-white p-6 rounded-xl shadow-lg border border-teal-200 hidden">
+                
+
+                    <div id="final-summary-card" class="bg-white p-6 rounded-xl shadow-lg border border-teal-200 hidden">
                     <h3 class="text-xl font-semibold mb-4 text-teal-700">Actionable Recovery Summary</h3>
-                    <div class="grid grid-cols-3 gap-4 text-center border-b pb-4 mb-4">
+                    <div class="grid grid-cols-4 gap-4 text-center border-b pb-4 mb-4">
                         <div class="p-3 bg-gray-50 rounded-lg">
                             <p class="text-3xl font-bold text-gray-800">540</p>
                             <p class="text-sm text-gray-500">Acres Analyzed</p>
@@ -199,6 +200,10 @@
                         <div class="p-3 bg-gray-50 rounded-lg">
                             <p class="text-3xl font-bold text-red-600">28%</p>
                             <p class="text-sm text-gray-500">High Severity Parcels</p>
+                        </div>
+                        <div class="p-3 bg-teal-50 rounded-lg ring-1 ring-teal-300">
+                            <p class="text-3xl font-bold text-teal-700">0.8</p>
+                            <p class="text-sm text-teal-600">Fitness Function Score</p>
                         </div>
                     </div>
 
@@ -418,7 +423,7 @@
 
             // 3) SVG overlay requires href + xlink:href for compatibility
             const svgImg = document.querySelector('#map-results svg image');
-            const overlayUrl = ASSETS_PREFIX + 'photo4.png';
+            const overlayUrl = ASSETS_PREFIX + 'photo3.png';
             if (svgImg) {
                 svgImg.setAttribute('href', overlayUrl);
                 svgImg.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', overlayUrl);
@@ -437,7 +442,7 @@
             updateUI();
             wireImagesForPages();
             // Optional diagnostics
-            ['photo1.png','photo2.png','photo3.png','photo4.png']
+            ['photo1.png','photo2.png','photo3.png','photo3.png']
                 .map(n => ASSETS_PREFIX + n)
                 .forEach(url => preloadImage(url).catch(() => console.warn('Missing asset:', url)));
         });
